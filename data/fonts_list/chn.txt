@@ -1,2 +1,7 @@
 ./data/fonts/chn/msyh.ttc
 ./data/fonts/chn/FZCCHJW.TTF
+./data/fonts/chn/CONSOLA.TTF
+./data/fonts/chn/CONSOLAB.TTF
+./data/fonts/chn/CONSOLAI.TTF
+./data/fonts/chn/CONSOLAZ.TTF
+./data/fonts/chn/PureunJeonnam-Bold.otf
