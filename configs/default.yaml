@@ -3,8 +3,8 @@ font_size:
   min: 24
   max: 33
 
-# choose Text color range
-# color boundary is in R,G,B format
+# 选择文本颜色范围
+# 颜色边界是R,G,B格式
 font_color:
   enable: true
   red:
@@ -20,16 +20,16 @@ font_color:
 #     l_boundary: [139,70,19]
 #     h_boundary: [160,82,43]
 
-# By default, text is drawed by Pillow with (https://stackoverflow.com/questions/43828955/measuring-width-of-text-python-pil)
-# If `random_space` is enabled, some text will be drawed char by char with a random space
+#默认情况下，文本是由Pillow with绘制的 (https://stackoverflow.com/questions/43828955/measuring-width-of-text-python-pil)
+# 如果“random_space”被启用，那么一些文本将被一个字符一个字符地绘制，并带有一个随机空间
 random_space:
-  enable: false
+  enable: true
   fraction: 0.3
-  min: -0.1 # -0.1 will make chars very close or even overlapped
+  min: -0.1 # -0.1将使字符非常接近，甚至重叠
   max: 0.1
 
-# Do remap with sin()
-# Currently this process is very slow!
+# Do 重新映射 with sin()
+# 目前这个过程非常缓慢!
 curve:
   enable: false
   fraction: 0.3
@@ -37,66 +37,68 @@ curve:
   min: 1 # sin 函数的幅值范围
   max: 5
 
-# random crop text height
+# 随机裁剪文本高度
 crop:
   enable: false
   fraction: 0.5
 
-  # top and bottom will applied equally
+  # 顶部和底部将平等地应用
   top:
     min: 5
-    max: 10 # in pixel, this value should small than img_height
+    max: 10 # 在像素中，这个值应该小于img_height
   bottom:
     min: 5
-    max: 10 # in pixel, this value should small than img_height
+    max: 10 # 在像素中，这个值应该小于img_height
 
-# Use image in bg_dir as background for text
+# 使用bg_dir中的图像作为文本的背景
 img_bg:
   enable: true
   fraction: 0.5
 
-# Not work when random_space applied
+# 文本的边框，应用random_space时不工作
 text_border:
   enable: false
   fraction: 0.5
 
-  # lighter than word color
+  # 比文字颜色浅
   light:
     enable: true
     fraction: 0.5
 
-  # darker than word color
+  #比文字颜色深
   dark:
     enable: true
     fraction: 0.5
 
 # https://docs.opencv.org/3.4/df/da0/group__photo__clone.html#ga2bf426e4c93a6b1f21705513dfeca49d
 # https://www.cs.virginia.edu/~connelly/class/2014/comp_photo/proj2/poisson.pdf
-# Use opencv seamlessClone() to draw text on background
-# For some background image, this will make text image looks more real
+# 使用opencv seamlessClone()在背景上绘制文本
+# 对于一些背景图像，这将使文本图像看起来更真实
 seamless_clone:
   enable: false
   fraction: 0.5
 
+#透视变换
 perspective_transform:
   max_x: 25
   max_y: 25
   max_z: 3
 
+#模糊
 blur:
   enable: true
   fraction: 0.03
 
-# If an image is applied blur, it will not be applied prydown
+# 如果一个图像被应用模糊，它将不会被应用prydown
 prydown:
   enable: true
   fraction: 0.03
-  max_scale: 1.5 # Image will first resize to 1.5x, and than resize to 1x
+  max_scale: 1.5 # 图像将首先调整到1.5倍，然后再调整到1x
 
+#噪音
 noise:
   enable: true
   fraction: 0.3
-
   gauss:
     enable: true
     fraction: 0.25
@@ -112,7 +114,7 @@ noise:
   poisson:
     enable: true
     fraction: 0.25
-
+#线条
 line:
   enable: false
   fraction: 0.05
@@ -128,7 +130,7 @@ line:
   middle_line:
     enable: false
     fraction: 0.5
-
+#线的颜色
 line_color:
   enable: false
   black:
@@ -140,19 +142,20 @@ line_color:
     l_boundary: [0,0,150]
     h_boundary: [60,60,255]
 
-# These operates are applied on the final output image,
-# so actually it can also be applied in training process as an data augmentation method.
+# 这些操作应用于最终的输出图像，
+#因此，它也可以作为一种数据扩充方法应用于训练过程中。
 
-# By default, text is darker than background.
-# If `reverse_color` is enabled, some images will have dark background and light text
+# 默认情况下，文字比背景颜色深。
+# 如果设置了‘reverse_color’，有些图片的背景颜色会比较深，文字颜色会比较浅
+#相反的颜色
 reverse_color:
   enable: false
   fraction: 0.5
-
+#浮雕
 emboss:
   enable: false
   fraction: 0.1
-
+#锐化
 sharp:
   enable: false
   fraction: 0.1
