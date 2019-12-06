@@ -11,6 +11,20 @@ import hashlib
 import sys
 
 
+# 加图片水印
+from PIL import Image
+
+
+
+def add_watermark(watermark_files):
+    watermark = Image.open("/Users/截图图库/5.jpg")
+    imageFile = Image.open("/Users/截图图库/4.jpg")
+    layer = Image.new('RGBA', imageFile.size, (0, 0, 0, 0))
+    layer.paste(watermark, (imageFile.size[0] - 300, imageFile.size[1] - 80))
+    word_img = Image.composite(layer, imageFile, layer)
+    return word_img
+
+
 def viz_img(text_im, fignum=1):
     """
     text_im : image containing text

@@ -50,6 +50,7 @@ renderer = Renderer(corpus, fonts, bgs, cfg,
                     clip_max_chars=flags.clip_max_chars,
                     debug=flags.debug,
                     gpu=flags.gpu,
+                    watermark_files=flags.watermark_files,
                     strict=flags.strict)
 
 
@@ -84,13 +85,13 @@ def gen_img_retry(renderer, img_index):
 # 1创建图片主函数
 def generate_img(img_index, q=None):
     global flags, lock, counter
-    # Make sure different process has different random seed
+    # 确保不同的进程有不同的随机种子
     np.random.seed()
-
+    # 使用渲染函数渲染图片，得到图片和标签
     im, word = gen_img_retry(renderer, img_index)
 
     base_name = '{:08d}'.format(img_index)
-
+    # 图片输出，处理多线程
     if not flags.viz:
         fname = os.path.join(flags.save_dir, base_name + '.jpg')
         cv2.imwrite(fname, im)

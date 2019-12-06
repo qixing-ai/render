@@ -6,7 +6,7 @@ from PIL import ImageFont, Image, ImageDraw
 from tenacity import retry
 
 import libs.math_utils as math_utils
-from libs.utils import draw_box, draw_bbox, prob, apply
+from libs.utils import draw_box, draw_bbox, prob, apply,add_watermark
 from libs.timer import Timer
 from render.liner import Liner
 from render.noiser import Noiser
@@ -15,10 +15,11 @@ import libs.font_utils as font_utils
 # noinspection PyMethodMayBeStatic
 from render.remaper import Remaper
 
-
+# 渲染图片主函数
 class Renderer(object):
+    # 参数处理，多线程共享
     def __init__(self, corpus, fonts, bgs, cfg, width=256, height=32,
-                 clip_max_chars=False, debug=False, gpu=False, strict=False):
+                 clip_max_chars=False, debug=False, gpu=False,watermark_files='', strict=False):
         self.corpus = corpus
         self.fonts = fonts
         self.bgs = bgs
@@ -29,6 +30,7 @@ class Renderer(object):
         self.debug = debug
         self.gpu = gpu
         self.strict = strict
+        self.watermark_files = watermark_files
         self.cfg = cfg
 
         self.timer = Timer()
@@ -44,30 +46,34 @@ class Renderer(object):
 
         if self.strict:
             self.font_unsupport_chars = font_utils.get_unsupported_chars(self.fonts, corpus.chars_file)
-
+    # 真渲染函数
     def gen_img(self, img_index):
         word, font, word_size = self.pick_font(img_index)
-        self.dmsg("after pick font")
+        self.dmsg("选择字体后")
 
-        # Background's height should much larger than raw word image's height,
-        # to make sure we can crop full word image after apply perspective
+        # 背景的高度应该远远大于原始文字图像的高度，
+        # 以确保我们可以裁剪完整的字图像后，应用透视
         bg = self.gen_bg(width=word_size[0] * 8, height=word_size[1] * 8)
+        # 在背景图上写字，text_box_pnts，文字位置
         word_img, text_box_pnts, word_color = self.draw_text_on_bg(word, font, bg)
-        self.dmsg("After draw_text_on_bg")
+        self.dmsg("将文字渲染到背景图完成")
 
         if apply(self.cfg.crop):
             text_box_pnts = self.apply_crop(text_box_pnts, self.cfg.crop)
 
         if apply(self.cfg.line):
             word_img, text_box_pnts = self.liner.apply(word_img, text_box_pnts, word_color)
-            self.dmsg("After draw line")
+            self.dmsg("将线条渲染完成")
 
         if self.debug:
             word_img = draw_box(word_img, text_box_pnts, (0, 255, 155))
 
+        if self.watermark_files != '':
+            word_img = add_watermark(watermark_files)
+
         if apply(self.cfg.curve):
             word_img, text_box_pnts = self.remaper.apply(word_img, text_box_pnts, word_color)
-            self.dmsg("After remapping")
+            self.dmsg("重新映射完成")
 
         if self.debug:
             word_img = draw_box(word_img, text_box_pnts, (155, 255, 0))
@@ -79,7 +85,7 @@ class Renderer(object):
                                              max_z=self.cfg.perspective_transform.max_z,
                                              gpu=self.gpu)
 
-        self.dmsg("After perspective transform")
+        self.dmsg("角度变换完成")
 
         if self.debug:
             _, crop_bbox = self.crop_img(word_img, text_box_pnts_transformed)
@@ -87,39 +93,40 @@ class Renderer(object):
         else:
             word_img, crop_bbox = self.crop_img(word_img, text_box_pnts_transformed)
 
-        self.dmsg("After crop_img")
-
+        self.dmsg("裁切图片完成")
+        # self.cfg配置参数
         if apply(self.cfg.noise):
             word_img = np.clip(word_img, 0., 255.)
             word_img = self.noiser.apply(word_img)
-            self.dmsg("After noiser")
+            self.dmsg("噪点处理完毕")
 
         blured = False
         if apply(self.cfg.blur):
             blured = True
             word_img = self.apply_blur_on_output(word_img)
-            self.dmsg("After blur")
+            self.dmsg("模糊处理完毕")
 
         if not blured:
             if apply(self.cfg.prydown):
                 word_img = self.apply_prydown(word_img)
-                self.dmsg("After prydown")
+                self.dmsg("prydown处理完毕")
 
         word_img = np.clip(word_img, 0., 255.)
 
         if apply(self.cfg.reverse_color):
             word_img = self.reverse_img(word_img)
-            self.dmsg("After reverse_img")
+            self.dmsg("反转颜色处理完毕")
 
         if apply(self.cfg.emboss):
             word_img = self.apply_emboss(word_img)
-            self.dmsg("After emboss")
+            self.dmsg("浮雕处理完毕")
 
         if apply(self.cfg.sharp):
             word_img = self.apply_sharp(word_img)
-            self.dmsg("After sharp")
+            self.dmsg("锐化处理完毕")
 
         return word_img, word
+
 
     def dmsg(self, msg):
         if self.debug:
@@ -150,7 +157,7 @@ class Renderer(object):
 
     def crop_img(self, img, text_box_pnts_transformed):
         """
-        Crop text from large input image
+        从大的输入图像裁剪文本
         :param img: image to crop
         :param text_box_pnts_transformed: text_bbox_pnts after apply_perspective_transform
         :return:
@@ -245,10 +252,10 @@ class Renderer(object):
 
     def draw_text_on_bg(self, word, font, bg):
         """
-        Draw word in the center of background
+       在背景中间画一个字
         :param word: word to draw
         :param font: font to draw word
-        :param bg: background numpy image
+        :param bg: 背景numpy图像
         :return:
             np_img: word image
             text_box_pnts: left-top, right-top, right-bottom, left-bottom
@@ -265,7 +272,7 @@ class Renderer(object):
         pil_img = Image.fromarray(np.uint8(bg))
         draw = ImageDraw.Draw(pil_img)
 
-        # Draw text in the center of bg
+        # 在bg的中心绘制文本
         text_x = int((bg_width - word_width) / 2)
         text_y = int((bg_height - word_height) / 2)
 
@@ -447,6 +454,7 @@ class Renderer(object):
         # now draw the text over it
         draw.text((x, y), text, font=font, fill=text_color)
 
+    # 生成背景图
     def gen_bg(self, width, height):
         if apply(self.cfg.img_bg):
             bg = self.gen_bg_from_image(int(width), int(height))
@@ -605,10 +613,13 @@ class Renderer(object):
         out = cv2.resize(img, (int(width / scale), int(height / scale)), interpolation=cv2.INTER_AREA)
         return cv2.resize(out, (width, height), interpolation=cv2.INTER_AREA)
 
+
+
     def reverse_img(self, word_img):
         offset = np.random.randint(-10, 10)
         return 255 + offset - word_img
 
+    # 创建模糊和锐化的核
     def create_kernals(self):
         self.emboss_kernal = np.array([
             [-2, -1, 0],
