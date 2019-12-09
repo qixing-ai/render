@@ -11,18 +11,7 @@ import hashlib
 import sys
 
 
-# 加图片水印
-from PIL import Image
 
-
-
-def add_watermark(watermark_files):
-    watermark = Image.open("/Users/截图图库/5.jpg")
-    imageFile = Image.open("/Users/截图图库/4.jpg")
-    layer = Image.new('RGBA', imageFile.size, (0, 0, 0, 0))
-    layer.paste(watermark, (imageFile.size[0] - 300, imageFile.size[1] - 80))
-    word_img = Image.composite(layer, imageFile, layer)
-    return word_img
 
 
 def viz_img(text_im, fignum=1):
@@ -91,6 +80,9 @@ def draw_bbox(img, bbox, color):
 
 
 def load_bgs(bg_dir):
+    if bg_dir == '':
+        return False
+
     dst = []
 
     for root, sub_folder, file_list in os.walk(bg_dir):
@@ -99,6 +91,24 @@ def load_bgs(bg_dir):
 
             # For load non-ascii image_path on Windows
             bg = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), cv2.IMREAD_COLOR)
+
+            dst.append(bg)
+
+    print("Background num: %d" % len(dst))
+    return dst
+
+def load_mask(bg_dir):
+    if bg_dir == '':
+        return False
+
+    dst = []
+
+    for root, sub_folder, file_list in os.walk(bg_dir):
+        for file_name in file_list:
+            image_path = os.path.join(root, file_name)
+
+            # For load non-ascii image_path on Windows
+            bg = cv2.imread(image_path, -1)
 
             dst.append(bg)
 

@@ -3,9 +3,12 @@
 """
 Generate training and test images.
 """
+
 import os
 import warnings
+
 warnings.filterwarnings("ignore")
+import random
 
 # prevent opencv use all cpus
 os.environ['OMP_NUM_THREADS'] = '1'
@@ -40,6 +43,7 @@ cfg = load_config(flags.config_file)
 
 fonts = font_utils.get_font_paths_from_list(flags.fonts_list)
 bgs = utils.load_bgs(flags.bg_dir)
+watermarks = utils.load_mask(flags.watermark_dir)
 
 corpus = corpus_factory(flags.corpus_mode, flags.chars_file, flags.corpus_dir, flags.length)
 
@@ -50,7 +54,6 @@ renderer = Renderer(corpus, fonts, bgs, cfg,
                     clip_max_chars=flags.clip_max_chars,
                     debug=flags.debug,
                     gpu=flags.gpu,
-                    watermark_files=flags.watermark_files,
                     strict=flags.strict)
 
 
@@ -73,7 +76,7 @@ def start_listen(q, fname):
     f.close()
 
 
-@retry
+# @retry
 def gen_img_retry(renderer, img_index):
     try:
         return renderer.gen_img(img_index)
@@ -81,6 +84,7 @@ def gen_img_retry(renderer, img_index):
         print("Retry gen_img: %s" % str(e))
         traceback.print_exc()
         raise Exception
+
 
 # 1创建图片主函数
 def generate_img(img_index, q=None):
@@ -94,9 +98,13 @@ def generate_img(img_index, q=None):
     # 图片输出，处理多线程
     if not flags.viz:
         fname = os.path.join(flags.save_dir, base_name + '.jpg')
-        cv2.imwrite(fname, im)
 
         label = "{} {}".format(base_name, word)
+        #    添加水印
+        if watermarks:
+            im = watermark(im, watermarks)
+
+        cv2.imwrite(fname, im)
 
         if q is not None:
             q.put(label)
@@ -111,6 +119,39 @@ def generate_img(img_index, q=None):
                       end=print_end)
     else:
         utils.viz_img(im)
+
+
+# fixme 加水印
+def watermark(img, watermarks, alpha=1):
+    h, w = img.shape[0], img.shape[1]
+    mask = random.choice(watermarks)
+    rate1 = int(w * 0.9) / mask.shape[1]
+    rate2 = int(h * 0.9) / mask.shape[0]
+    if rate1 < rate2:
+        rate=rate1
+    else:
+        rate = rate2
+    mask = cv2.resize(mask, None, fx=rate, fy=rate)
+    mask_h, mask_w = mask.shape[0], mask.shape[1]
+    mask_channels = cv2.split(mask)
+    dst_channels = cv2.split(img)
+    b, g, r, a = cv2.split(mask)
+
+    # 计算mask在图片的坐标
+    ul_points = (2, int(int(w / 2) - mask_w / 2))
+    dr_points = (2+ mask_h, int(int(w / 2) + mask_w / 2))
+    print('水印大小',dr_points[0] - ul_points[0], dr_points[1] - ul_points[1])
+    print('水印大小', a.shape)
+    print('目标大小',dst_channels[1].shape)
+    for i in range(3):
+        dst_channels[i][ul_points[0]: dr_points[0], ul_points[1]: dr_points[1]] = dst_channels[i][
+                                                                                  ul_points[0]: dr_points[0],
+                                                                                  ul_points[1]: dr_points[1]] * (
+                                                                                              255.0 - a * alpha) / 255
+        dst_channels[i][ul_points[0]: dr_points[0], ul_points[1]: dr_points[1]] += np.array(
+            mask_channels[i] * (a * alpha / 255), dtype=np.uint8)
+    dst_img = cv2.merge(dst_channels)
+    return dst_img
 
 
 def sort_labels(tmp_label_fname, label_fname):
@@ -152,7 +193,6 @@ if __name__ == "__main__":
     tmp_label_path = os.path.join(flags.save_dir, 'tmp_labels.txt')
     # 单独输出标签
     label_path = os.path.join(flags.save_dir, 'labels.txt')
-
 
     manager = mp.Manager()
     q = manager.Queue()

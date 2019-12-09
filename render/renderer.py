@@ -6,7 +6,7 @@ from PIL import ImageFont, Image, ImageDraw
 from tenacity import retry
 
 import libs.math_utils as math_utils
-from libs.utils import draw_box, draw_bbox, prob, apply,add_watermark
+from libs.utils import draw_box, draw_bbox, prob, apply
 from libs.timer import Timer
 from render.liner import Liner
 from render.noiser import Noiser
@@ -19,7 +19,7 @@ from render.remaper import Remaper
 class Renderer(object):
     # 参数处理，多线程共享
     def __init__(self, corpus, fonts, bgs, cfg, width=256, height=32,
-                 clip_max_chars=False, debug=False, gpu=False,watermark_files='', strict=False):
+                 clip_max_chars=False, debug=False, gpu=False,strict=False):
         self.corpus = corpus
         self.fonts = fonts
         self.bgs = bgs
@@ -30,7 +30,6 @@ class Renderer(object):
         self.debug = debug
         self.gpu = gpu
         self.strict = strict
-        self.watermark_files = watermark_files
         self.cfg = cfg
 
         self.timer = Timer()
@@ -39,7 +38,6 @@ class Renderer(object):
         self.remaper = Remaper(cfg)
 
         self.create_kernals()
-
         if not self.is_bgr():
             for i, bg in enumerate(self.bgs):
                 self.bgs[i] = cv2.cvtColor(bg, cv2.COLOR_BGR2GRAY)
@@ -68,8 +66,6 @@ class Renderer(object):
         if self.debug:
             word_img = draw_box(word_img, text_box_pnts, (0, 255, 155))
 
-        if self.watermark_files != '':
-            word_img = add_watermark(watermark_files)
 
         if apply(self.cfg.curve):
             word_img, text_box_pnts = self.remaper.apply(word_img, text_box_pnts, word_color)
@@ -124,7 +120,6 @@ class Renderer(object):
         if apply(self.cfg.sharp):
             word_img = self.apply_sharp(word_img)
             self.dmsg("锐化处理完毕")
-
         return word_img, word
 
 

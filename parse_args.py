@@ -6,10 +6,10 @@ import os
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--num_img', type=int, default=1000, help="图片数量")
+    parser.add_argument('--num_img', type=int, default=1, help="图片数量")
 
-    parser.add_argument('--length', type=int, default=5, help='文字数量')
-    parser.add_argument('--watermark_files',type=str, default='./data/watermaker', help='添加水印文件夹')
+    parser.add_argument('--length', type=int, default=2, help='文字数量')
+    parser.add_argument('--watermark_dir',type=str, default='./data/watermaker', help='水印文件夹')
 
     parser.add_argument('--clip_max_chars', action='store_true', default=False, help='文字数量是否小于lay的数量')
 
