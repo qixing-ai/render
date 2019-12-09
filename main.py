@@ -140,9 +140,9 @@ def watermark(img, watermarks, alpha=1):
     # 计算mask在图片的坐标
     ul_points = (2, int(int(w / 2) - mask_w / 2))
     dr_points = (2+ mask_h, int(int(w / 2) + mask_w / 2))
-    print('水印大小',dr_points[0] - ul_points[0], dr_points[1] - ul_points[1])
-    print('水印大小', a.shape)
-    print('目标大小',dst_channels[1].shape)
+    # print('水印大小',dr_points[0] - ul_points[0], dr_points[1] - ul_points[1])
+    # print('水印大小', a.shape)
+    # print('目标大小',dst_channels[1].shape)
     for i in range(3):
         dst_channels[i][ul_points[0]: dr_points[0], ul_points[1]: dr_points[1]] = dst_channels[i][
                                                                                   ul_points[0]: dr_points[0],
